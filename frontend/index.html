@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Information Extraction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        header h1 {
+            color: #1a202c;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        header .icon {
+            width: 40px;
+            height: 40px;
+            background: #4f46e5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+        
+        .badges {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            color: #1a202c;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .upload-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upload-zone:hover {
+            border-color: #4f46e5;
+            background: #f8fafc;
+        }
+        
+        .upload-zone.has-file {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        
+        .upload-zone input {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 4px;
+        }
+        
+        .file-size {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #4338ca;
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #4f46e5;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .tag {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .confidence-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .confidence-high {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .confidence-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .confidence-low {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .stat-box {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a202c;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: #4f46e5;
+        }
+        
+        .tab.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .field-card {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .field-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .field-name {
+            font-size: 13px;
+            color: #64748b;
+            text-transform: capitalize;
+        }
+        
+        .field-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+        
+        .entity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .entity-type {
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        
+        .text-preview {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <div class="icon">📄</div>
+                <div>
+                    Document Extractor
+                    <span style="display: block; font-size: 13px; font-weight: normal; color: #64748b;">AI-powered information extraction</span>
+                </div>
+            </h1>
+            <div class="badges">
+                <span class="badge">OCR + NLP</span>
+                <span class="badge">v1.0</span>
+            </div>
+        </header>
+        
+        <div class="main-grid">
+            <div class="left-panel">
+                <div class="card">
+                    <h2>📤 Upload Document</h2>
+                    
+                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                        <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp" onchange="handleFileSelect(event)">
+                        <div id="uploadContent">
+                            <div class="upload-icon">📁</div>
+                            <p style="color: #475569; margin-bottom: 4px;">Click to select file</p>
+                            <p style="font-size: 12px; color: #94a3b8;">PDF, PNG, JPG, TIFF up to 50MB</p>
+                        </div>
+                    </div>
+                    
+                    <div id="progressSection" class="hidden">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                        </div>
+                        <p style="text-align: center; font-size: 12px; color: #64748b;" id="progressText">Processing...</p>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="extractBtn" onclick="handleUpload()" disabled>
+                        <span id="btnText">Extract Information</span>
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="clearAll()" style="margin-top: 8px; width: 100%;">
+                        🗑️ Clear
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <h2>📋 Supported Formats</h2>
+                    <div class="tag-list">
+                        <span class="tag">PDF</span>
+                        <span class="tag">PNG</span>
+                        <span class="tag">JPG</span>
+                        <span class="tag">TIFF</span>
+                        <span class="tag">BMP</span>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>🔍 Extracted Entities</h2>
+                    <div class="tag-list">
+                        <span class="tag">Person</span>
+                        <span class="tag">Organization</span>
+                        <span class="tag">Date</span>
+                        <span class="tag">Amount</span>
+                        <span class="tag">Email</span>
+                        <span class="tag">Phone</span>
+                        <span class="tag">Invoice</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="card" id="resultCard" style="display: none;">
+                    <div class="result-header">
+                        <div>
+                            <h2 style="margin-bottom: 4px;">✅ Extraction Results</h2>
+                            <p style="font-size: 13px; color: #64748b;">Document ID: <span id="docId"></span></p>
+                        </div>
+                        <button class="btn btn-secondary" onclick="downloadJSON()">
+                            📥 Export JSON
+                        </button>
+                    </div>
+                    
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 14px; font-weight: 500; color: #475569;">Overall Confidence</span>
+                            <span class="confidence-badge" id="confidenceBadge">0%</span>
+                        </div>
+                        <div class="progress-bar" style="margin: 0;">
+                            <div class="progress-fill" id="confidenceBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="statPages">0</div>
+                            <div class="stat-label">Pages</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statEntities">0</div>
+                            <div class="stat-label">Entities</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statFields">0</div>
+                            <div class="stat-label">Fields</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statTime">0s</div>
+                            <div class="stat-label">Processing Time</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab" onclick="switchTab('fields')">Fields</button>
+                        <button class="tab" onclick="switchTab('entities')">Entities</button>
+                        <button class="tab" onclick="switchTab('text')">Text</button>
+                    </div>
+                    
+                    <div id="tab-overview" class="tab-content active">
+                        <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                            <h3 style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 12px;">File Information</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+                                <div><span style="color: #64748b;">Filename:</span> <span id="infoFilename"></span></div>
+                                <div><span style="color: #64748b;">Type:</span> <span id="infoType"></span></div>
+                                <div><span style="color: #64748b;">Size:</span> <span id="infoSize"></span></div>
+                                <div><span style="color: #64748b;">OCR Engine:</span> <span id="infoOcr"></span></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 12px;">Extraction Methods</h3>
+                            <div class="tag-list" id="methodsList"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="tab-fields" class="tab-content">
+                        <div id="fieldsList"></div>
+                    </div>
+                    
+                    <div id="tab-entities" class="tab-content">
+                        <div id="entitiesList"></div>
+                    </div>
+                    
+                    <div id="tab-text" class="tab-content">
+                        <div class="text-preview" id="textPreview"></div>
+                    </div>
+                </div>
+                
+                <div class="card empty-state" id="emptyState">
+                    <div class="icon">📄</div>
+                    <h3 style="color: #475569; margin-bottom: 8px;">No Document Processed</h3>
+                    <p style="font-size: 14px;">Upload a document to extract structured information including entities, dates, amounts, and more.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let currentFile = null;
+        let currentResult = null;
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const allowed = ['.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!allowed.includes(ext)) {
+                alert('Invalid file type. Allowed: ' + allowed.join(', '));
+                return;
+            }
+            
+            if (file.size > 50 * 1024 * 1024) {
+                alert('File too large. Maximum size is 50MB.');
+                return;
+            }
+            
+            currentFile = file;
+            
+            const uploadZone = document.getElementById('uploadZone');
+            const uploadContent = document.getElementById('uploadContent');
+            
+            uploadZone.classList.add('has-file');
+            uploadContent.innerHTML = `
+                <div class="upload-icon">📄</div>
+                <div class="file-name">${file.name}</div>
+                <div class="file-size">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+            `;
+            
+            document.getElementById('extractBtn').disabled = false;
+        }
+        
+        async function handleUpload() {
+            if (!currentFile) return;
+            
+            const btn = document.getElementById('extractBtn');
+            const btnText = document.getElementById('btnText');
+            const progressSection = document.getElementById('progressSection');
+            const progressBar = document.getElementById('progressBar');
+            
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="loading"></span> Processing...';
+            progressSection.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('min_confidence', '0.5');
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                if (progress > 90) clearInterval(progressInterval);
+                progressBar.style.width = progress + '%';
+            }, 100);
+            
+            try {
+                const response = await fetch(`${API_URL}/extract`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Processing failed');
+                }
+                
+                const result = await response.json();
+                currentResult = result;
+                
+                if (result.success) {
+                    displayResult(result);
+                } else {
+                    alert('Error: ' + result.error_message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Extract Information';
+                setTimeout(() => {
+                    progressSection.classList.add('hidden');
+                }, 500);
+            }
+        }
+        
+        function displayResult(result) {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('resultCard').style.display = 'block';
+            
+            // Header
+            document.getElementById('docId').textContent = result.document_id;
+            
+            // Confidence
+            const conf = Math.round(result.overall_confidence * 100);
+            const confBadge = document.getElementById('confidenceBadge');
+            confBadge.textContent = conf + '%';
+            confBadge.className = 'confidence-badge ' + (conf >= 85 ? 'confidence-high' : conf >= 60 ? 'confidence-medium' : 'confidence-low');
+            document.getElementById('confidenceBar').style.width = conf + '%';
+            
+            // Stats
+            document.getElementById('statPages').textContent = result.metadata.pages_processed;
+            document.getElementById('statEntities').textContent = result.entities.length;
+            document.getElementById('statFields').textContent = Object.keys(result.fields).length;
+            document.getElementById('statTime').textContent = result.metadata.processing_time_seconds + 's';
+            
+            // File info
+            document.getElementById('infoFilename').textContent = result.metadata.filename;
+            document.getElementById('infoType').textContent = result.metadata.file_type;
+            document.getElementById('infoSize').textContent = (result.metadata.file_size_bytes / 1024).toFixed(2) + ' KB';
+            document.getElementById('infoOcr').textContent = result.metadata.ocr_engine;
+            
+            // Methods
+            document.getElementById('methodsList').innerHTML = result.metadata.extraction_methods
+                .map(m => `<span class="tag">${m}</span>`)
+                .join('');
+            
+            // Fields
+            const fieldsList = document.getElementById('fieldsList');
+            if (Object.keys(result.fields).length > 0) {
+                fieldsList.innerHTML = Object.entries(result.fields).map(([key, field]) => `
+                    <div class="field-card">
+                        <div class="field-header">
+                            <span class="field-name">${field.field_name.replace(/_/g, ' ')}</span>
+                            <span class="confidence-badge confidence-${field.confidence_level}">
+                                ${Math.round(field.confidence * 100)}%
+                            </span>
+                        </div>
+                        <div class="field-value">${field.value}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                            Method: ${field.extraction_method}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                fieldsList.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">No fields extracted</p>';
+            }
+            
+            // Entities
+            const entitiesList = document.getElementById('entitiesList');
+            if (result.entities.length > 0) {
+                entitiesList.innerHTML = result.entities.map(e => `
+                    <div class="entity-item">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="entity-type">${e.type}</span>
+                            <span style="font-weight: 500; color: #1a202c;">${e.value}</span>
+                        </div>
+                        <span class="confidence-badge confidence-${e.confidence_level}" style="font-size: 11px; padding: 2px 8px;">
+                            ${Math.round(e.confidence * 100)}%
+                        </span>
+                    </div>
+                `).join('');
+            } else {
+                entitiesList.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px;">No entities extracted</p>';
+            }
+            
+            // Text
+            document.getElementById('textPreview').textContent = result.text;
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+        
+        function downloadJSON() {
+            if (!currentResult) return;
+            
+            const dataStr = JSON.stringify(currentResult, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `extraction_${currentResult.document_id}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+        
+        function clearAll() {
+            currentFile = null;
+            currentResult = null;
+            
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadZone').classList.remove('has-file');
+            document.getElementById('uploadContent').innerHTML = `
+                <div class="upload-icon">📁</div>
+                <p style="color: #475569; margin-bottom: 4px;">Click to select file</p>
+                <p style="font-size: 12px; color: #94a3b8;">PDF, PNG, JPG, TIFF up to 50MB</p>
+            `;
+            document.getElementById('extractBtn').disabled = true;
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
